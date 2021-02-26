@@ -1,2 +1,9 @@
 
 .terraform/
+
+*.tfstate
+*.backup
+*.plan
+
+# Local Backend config file
+backend.local.config.tf
