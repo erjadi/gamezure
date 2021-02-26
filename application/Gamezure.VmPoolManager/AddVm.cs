@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using Azure.ResourceManager.Compute.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -29,11 +30,19 @@ namespace Gamezure.VmPoolManager
             // return name != null
             //     ? (ActionResult) new OkObjectResult($"Hello, {name}")
             //     : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
-            
-            
-            var rg = await new PoolManager(log).CreateVm(new PoolManager.VmCreateParams());
 
-            return new OkObjectResult(rg);
+
+            var vmCreateParams = new PoolManager.VmCreateParams(
+                "gamezure-vm",
+                "gamezure-user",
+                Guid.NewGuid().ToString(),
+                "gamezure-vnet",
+                "rg-gamezure"
+            );
+            
+            VirtualMachine vm = await new PoolManager(log).CreateVm(vmCreateParams);
+
+            return new OkObjectResult(vm);
         }
     }
 }

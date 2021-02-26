@@ -12,6 +12,7 @@ using Azure.ResourceManager.Resources.Models;
 using Microsoft.Extensions.Logging;
 using IPVersion = Azure.ResourceManager.Network.Models.IPVersion;
 using NetworkInterface = Azure.ResourceManager.Network.Models.NetworkInterface;
+using NetworkProfile = Azure.ResourceManager.Compute.Models.NetworkProfile;
 
 namespace Gamezure.VmPoolManager
 {
@@ -24,7 +25,7 @@ namespace Gamezure.VmPoolManager
             this.log = log;
         }
         
-        public async Task<ResourceGroup> CreateVm(VmCreateParams vmCreateParams)
+        public async Task<VirtualMachine> CreateVm(VmCreateParams vmCreateParams)
         {
             var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
             var credential = new DefaultAzureCredential();
@@ -36,7 +37,7 @@ namespace Gamezure.VmPoolManager
             VirtualMachinesOperations virtualMachinesClient = computeClient.VirtualMachines;
             VirtualNetworksOperations virtualNetworksClient = networkManagementClient.VirtualNetworks;
             
-            Response<ResourceGroup> rgResponse = await resourceGroupsClient.GetAsync("gamezure_dev-rg");
+            Response<ResourceGroup> rgResponse = await resourceGroupsClient.GetAsync(vmCreateParams.ResourceGroupName);
             // TODO: check rgResponse for errors!
             ResourceGroup resourceGroup = rgResponse.Value;
 
@@ -48,7 +49,7 @@ namespace Gamezure.VmPoolManager
             
             var vm = await CreateWindowsVm(resourceGroup, vmCreateParams, nic, virtualMachinesClient); 
 
-            return resourceGroup;
+            return vm;
         }
 
         public async Task<VirtualMachine> CreateWindowsVm(ResourceGroup resourceGroup, VmCreateParams vmCreateParams,
@@ -64,6 +65,7 @@ namespace Gamezure.VmPoolManager
                     AdminUsername = vmCreateParams.UserName,
                     AdminPassword = vmCreateParams.UserPassword,
                 },
+                NetworkProfile = new NetworkProfile(),
                 StorageProfile = new StorageProfile
                 {
                     ImageReference = new ImageReference
@@ -77,6 +79,7 @@ namespace Gamezure.VmPoolManager
                 },
                 HardwareProfile = new HardwareProfile { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
             };
+            
             
             windowsVM.NetworkProfile.NetworkInterfaces.Add(new NetworkInterfaceReference { Id = nic.Id });
 
@@ -138,13 +141,23 @@ namespace Gamezure.VmPoolManager
             return ipAddress;
         }
 
-        public struct VmCreateParams
+        public readonly struct VmCreateParams
         {
-            public string Name { get; private set; }
-            public string UserName { get; private set; }
-            public string UserPassword { get; private set; }
-            
-            public string VnetName { get; private set; }
+            public string Name { get; }
+            public string UserName { get; }
+            public string UserPassword { get; }
+            public string VnetName { get; }
+            public string ResourceGroupName { get; }
+
+
+            public VmCreateParams(string name, string userName, string userPassword, string vnetName, string resourceGroupName)
+            {
+                this.Name = name;
+                this.UserName = userName;
+                this.UserPassword = userPassword;
+                this.VnetName = vnetName;
+                this.ResourceGroupName = resourceGroupName;
+            }
         }
     }
 }
