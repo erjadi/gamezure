@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Identity;
@@ -36,9 +37,10 @@ namespace Gamezure.VmPoolManager
             ResourceGroupsOperations resourceGroupsClient = resourceClient.ResourceGroups;
             VirtualMachinesOperations virtualMachinesClient = computeClient.VirtualMachines;
             VirtualNetworksOperations virtualNetworksClient = networkManagementClient.VirtualNetworks;
+
+            var rgExists = await GuardResourceGroup(vmCreateParams, resourceGroupsClient);
             
             Response<ResourceGroup> rgResponse = await resourceGroupsClient.GetAsync(vmCreateParams.ResourceGroupName);
-            // TODO: check rgResponse for errors!
             ResourceGroup resourceGroup = rgResponse.Value;
             
             VirtualNetwork vnet = await EnsureVnet(vmCreateParams, virtualNetworksClient, resourceGroup);
@@ -47,6 +49,36 @@ namespace Gamezure.VmPoolManager
             VirtualMachine vm = await CreateWindowsVm(resourceGroup, vmCreateParams, nic, virtualMachinesClient); 
 
             return vm;
+        }
+
+        public async Task<bool> GuardResourceGroup(VmCreateParams vmCreateParams, ResourceGroupsOperations resourceGroupsClient)
+        {
+            bool exists = false;
+            try
+            {
+                Response rgExists =
+                    await resourceGroupsClient.CheckExistenceAsync(vmCreateParams.ResourceGroupName);
+
+                if (rgExists.Status == 204) // 204 - No Content
+                {
+                    exists = true;
+                }
+            }
+            catch (RequestFailedException requestFailedException)
+            {
+                switch (requestFailedException.Status)
+                {
+                    case 403:   // 403 - Forbidden
+                        log.LogError(requestFailedException,
+                            "No permission to read a resource group with the name {RgName}", vmCreateParams.ResourceGroupName);
+                        break;
+                    default:
+                        log.LogError(requestFailedException, "Request failed");
+                        break;
+                }
+            }
+
+            return exists;
         }
 
         private static async Task<VirtualNetwork> EnsureVnet(VmCreateParams vmCreateParams, VirtualNetworksOperations virtualNetworksClient, ResourceGroup resourceGroup)
