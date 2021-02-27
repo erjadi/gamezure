@@ -37,7 +37,8 @@ namespace Gamezure.VmPoolManager
                 "gamezure-user",
                 Guid.NewGuid().ToString(),
                 "gamezure-vnet",
-                "rg-gamezure"
+                "rg-gamezure-vmpool",
+                "westeurope"
             );
             
             VirtualMachine vm = await new PoolManager(log).CreateVm(vmCreateParams);

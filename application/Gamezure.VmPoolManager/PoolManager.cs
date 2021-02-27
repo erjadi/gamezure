@@ -37,19 +37,58 @@ namespace Gamezure.VmPoolManager
             VirtualMachinesOperations virtualMachinesClient = computeClient.VirtualMachines;
             VirtualNetworksOperations virtualNetworksClient = networkManagementClient.VirtualNetworks;
             
-            Response<ResourceGroup> rgResponse = await resourceGroupsClient.GetAsync(vmCreateParams.ResourceGroupName);
-            // TODO: check rgResponse for errors!
-            ResourceGroup resourceGroup = rgResponse.Value;
+            ResourceGroup resourceGroup = await EnsureResourceGroup(vmCreateParams, resourceGroupsClient);
+            VirtualNetwork vnet = await EnsureVnet(vmCreateParams, virtualNetworksClient, resourceGroup);
 
-            var vnetResponse = await virtualNetworksClient.GetAsync(resourceGroup.Name, vmCreateParams.VnetName);
-            // TODO: check vnetResponse for errors!
-            var vnet = vnetResponse.Value;
-            
-            var nic = await CreateNetworkInterfaceAsync(networkManagementClient, resourceGroup, vmCreateParams, vnet);
-            
-            var vm = await CreateWindowsVm(resourceGroup, vmCreateParams, nic, virtualMachinesClient); 
+            NetworkInterface nic = await CreateNetworkInterfaceAsync(networkManagementClient, resourceGroup, vmCreateParams, vnet);
+            VirtualMachine vm = await CreateWindowsVm(resourceGroup, vmCreateParams, nic, virtualMachinesClient); 
 
             return vm;
+        }
+
+        private static async Task<VirtualNetwork> EnsureVnet(VmCreateParams vmCreateParams, VirtualNetworksOperations virtualNetworksClient, ResourceGroup resourceGroup)
+        {
+            VirtualNetwork vnet;
+            var vnetResponse = await virtualNetworksClient.GetAsync(resourceGroup.Name, vmCreateParams.VnetName);
+            
+            if (vnetResponse.Value is null)
+            {
+                
+                vnet = await CreateVirtualNetwork(vmCreateParams, virtualNetworksClient, resourceGroup);
+                if (vnet is null)
+                {
+                    throw new Exception($"Could not create vnet {vmCreateParams.VnetName} in resource group {resourceGroup.Name}");
+                }
+            }
+            else
+            {
+                vnet = vnetResponse.Value;
+            }
+
+            return vnet;
+        }
+
+        private static async Task<VirtualNetwork> CreateVirtualNetwork(VmCreateParams vmCreateParams,
+            VirtualNetworksOperations virtualNetworksClient, ResourceGroup resourceGroup)
+        {
+            var vnet = new VirtualNetwork
+            {
+                Location = vmCreateParams.ResourceLocation,
+                Subnets = { }
+            };
+
+            await virtualNetworksClient.StartCreateOrUpdateAsync(resourceGroup.Name, vmCreateParams.VnetName, vnet);
+            return vnet;
+        }
+
+        private static async Task<ResourceGroup> EnsureResourceGroup(VmCreateParams vmCreateParams, ResourceGroupsOperations resourceGroupsClient)
+        {
+            Response rgExists = await resourceGroupsClient.CheckExistenceAsync(vmCreateParams.ResourceGroupName);
+            var rg = new ResourceGroup(vmCreateParams.ResourceLocation);
+            Response<ResourceGroup> rgResponse = await resourceGroupsClient.CreateOrUpdateAsync(vmCreateParams.ResourceGroupName, rg);
+            // TODO: check rgResponse for errors!
+            ResourceGroup resourceGroup = rgResponse.Value;
+            return resourceGroup;
         }
 
         public async Task<VirtualMachine> CreateWindowsVm(ResourceGroup resourceGroup, VmCreateParams vmCreateParams,
@@ -148,15 +187,17 @@ namespace Gamezure.VmPoolManager
             public string UserPassword { get; }
             public string VnetName { get; }
             public string ResourceGroupName { get; }
+            public string ResourceLocation { get; }
 
 
-            public VmCreateParams(string name, string userName, string userPassword, string vnetName, string resourceGroupName)
+            public VmCreateParams(string name, string userName, string userPassword, string vnetName, string resourceGroupName, string resourceLocation)
             {
                 this.Name = name;
                 this.UserName = userName;
                 this.UserPassword = userPassword;
                 this.VnetName = vnetName;
                 this.ResourceGroupName = resourceGroupName;
+                this.ResourceLocation = resourceLocation;
             }
         }
     }
