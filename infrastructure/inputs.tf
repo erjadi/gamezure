@@ -1,10 +1,4 @@
-﻿variable "rgName" {
-  type = string
-  description = "The resource group name"
-  default = "rg-gamezure"
-}
-
-variable "location" {
+﻿variable "location" {
   type = string
   description = "The location in which to create all resources"
   default = "westeurope"
@@ -19,4 +13,9 @@ variable "prefix" {
 variable "tags" {
   type = list(string)
   default = []
+}
+
+variable "sp_client_id" {
+  type = string
+  description = "Service Principal ID which is used to run the Gamezure API"
 }

@@ -37,7 +37,12 @@ namespace Gamezure.VmPoolManager
             VirtualMachinesOperations virtualMachinesClient = computeClient.VirtualMachines;
             VirtualNetworksOperations virtualNetworksClient = networkManagementClient.VirtualNetworks;
             
-            ResourceGroup resourceGroup = await EnsureResourceGroup(vmCreateParams, resourceGroupsClient);
+            Response<ResourceGroup> rgResponse = await resourceGroupsClient.GetAsync(vmCreateParams.ResourceGroupName);
+            // TODO: check rgResponse for errors!
+            ResourceGroup resourceGroup = rgResponse.Value;
+            // ResourceGroup resourceGroup = await EnsureResourceGroup(vmCreateParams, resourceGroupsClient);
+            
+            
             VirtualNetwork vnet = await EnsureVnet(vmCreateParams, virtualNetworksClient, resourceGroup);
 
             NetworkInterface nic = await CreateNetworkInterfaceAsync(networkManagementClient, resourceGroup, vmCreateParams, vnet);

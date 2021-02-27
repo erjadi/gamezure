@@ -36,8 +36,8 @@ namespace Gamezure.VmPoolManager
                 "gamezure-vm",
                 "gamezure-user",
                 Guid.NewGuid().ToString(),
-                "gamezure-vnet",
-                "rg-gamezure-vmpool",
+                "gamezure-vmpool-vnet",
+                "gamezure-vmpool-rg",
                 "westeurope"
             );
             
