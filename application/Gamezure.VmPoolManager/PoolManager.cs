@@ -40,8 +40,6 @@ namespace Gamezure.VmPoolManager
             Response<ResourceGroup> rgResponse = await resourceGroupsClient.GetAsync(vmCreateParams.ResourceGroupName);
             // TODO: check rgResponse for errors!
             ResourceGroup resourceGroup = rgResponse.Value;
-            // ResourceGroup resourceGroup = await EnsureResourceGroup(vmCreateParams, resourceGroupsClient);
-            
             
             VirtualNetwork vnet = await EnsureVnet(vmCreateParams, virtualNetworksClient, resourceGroup);
 
@@ -84,16 +82,6 @@ namespace Gamezure.VmPoolManager
 
             await virtualNetworksClient.StartCreateOrUpdateAsync(resourceGroup.Name, vmCreateParams.VnetName, vnet);
             return vnet;
-        }
-
-        private static async Task<ResourceGroup> EnsureResourceGroup(VmCreateParams vmCreateParams, ResourceGroupsOperations resourceGroupsClient)
-        {
-            Response rgExists = await resourceGroupsClient.CheckExistenceAsync(vmCreateParams.ResourceGroupName);
-            var rg = new ResourceGroup(vmCreateParams.ResourceLocation);
-            Response<ResourceGroup> rgResponse = await resourceGroupsClient.CreateOrUpdateAsync(vmCreateParams.ResourceGroupName, rg);
-            // TODO: check rgResponse for errors!
-            ResourceGroup resourceGroup = rgResponse.Value;
-            return resourceGroup;
         }
 
         public async Task<VirtualMachine> CreateWindowsVm(ResourceGroup resourceGroup, VmCreateParams vmCreateParams,
