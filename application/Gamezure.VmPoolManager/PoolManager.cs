@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using Azure;
+using Azure.Core;
 using Azure.Identity;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
@@ -20,44 +20,54 @@ namespace Gamezure.VmPoolManager
     public class PoolManager
     {
         private readonly ILogger log;
+        private readonly string subscriptionId;
+        private readonly TokenCredential credential;
+        private readonly ResourcesManagementClient resourceClient;
+        private readonly ComputeManagementClient computeClient;
+        private readonly NetworkManagementClient networkManagementClient;
+        private readonly ResourceGroupsOperations resourceGroupsClient;
+        private readonly VirtualMachinesOperations virtualMachinesClient;
+        private readonly VirtualNetworksOperations virtualNetworksClient;
 
-        public PoolManager(ILogger log)
+        public PoolManager(ILogger log, string subscriptionId, TokenCredential credential)
         {
             this.log = log;
+            this.subscriptionId = subscriptionId;
+            this.credential = credential;
+            
+            resourceClient = new ResourcesManagementClient(this.subscriptionId, this.credential);
+            computeClient = new ComputeManagementClient(this.subscriptionId, this.credential);
+            networkManagementClient = new NetworkManagementClient(this.subscriptionId, this.credential);
+            
+            resourceGroupsClient = resourceClient.ResourceGroups;
+            virtualMachinesClient = computeClient.VirtualMachines;
+            virtualNetworksClient = networkManagementClient.VirtualNetworks;
+        }
+
+        public PoolManager(ILogger log, string subscriptionId) : this(log, subscriptionId, new DefaultAzureCredential())
+        {
         }
         
         public async Task<VirtualMachine> CreateVm(VmCreateParams vmCreateParams)
         {
-            var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
-            var credential = new DefaultAzureCredential();
-            var resourceClient = new ResourcesManagementClient(subscriptionId, credential);
-            var computeClient = new ComputeManagementClient(subscriptionId, credential);
-            var networkManagementClient = new NetworkManagementClient(subscriptionId, credential);
-
-            ResourceGroupsOperations resourceGroupsClient = resourceClient.ResourceGroups;
-            VirtualMachinesOperations virtualMachinesClient = computeClient.VirtualMachines;
-            VirtualNetworksOperations virtualNetworksClient = networkManagementClient.VirtualNetworks;
-
-            var rgExists = await GuardResourceGroup(vmCreateParams, resourceGroupsClient);
-            
             Response<ResourceGroup> rgResponse = await resourceGroupsClient.GetAsync(vmCreateParams.ResourceGroupName);
             ResourceGroup resourceGroup = rgResponse.Value;
             
-            VirtualNetwork vnet = await EnsureVnet(vmCreateParams, virtualNetworksClient, resourceGroup);
+            VirtualNetwork vnet = await EnsureVnet(vmCreateParams, resourceGroup);
 
-            NetworkInterface nic = await CreateNetworkInterfaceAsync(networkManagementClient, resourceGroup, vmCreateParams, vnet);
+            NetworkInterface nic = await CreateNetworkInterfaceAsync(resourceGroup, vmCreateParams, vnet);
             VirtualMachine vm = await CreateWindowsVm(resourceGroup, vmCreateParams, nic, virtualMachinesClient); 
 
             return vm;
         }
 
-        public async Task<bool> GuardResourceGroup(VmCreateParams vmCreateParams, ResourceGroupsOperations resourceGroupsClient)
+        public async Task<bool> GuardResourceGroup(string name)
         {
             bool exists = false;
             try
             {
                 Response rgExists =
-                    await resourceGroupsClient.CheckExistenceAsync(vmCreateParams.ResourceGroupName);
+                    await resourceGroupsClient.CheckExistenceAsync(name);
 
                 if (rgExists.Status == 204) // 204 - No Content
                 {
@@ -70,7 +80,7 @@ namespace Gamezure.VmPoolManager
                 {
                     case 403:   // 403 - Forbidden
                         log.LogError(requestFailedException,
-                            "No permission to read a resource group with the name {RgName}", vmCreateParams.ResourceGroupName);
+                            "No permission to read a resource group with the name {RgName}", name);
                         break;
                     default:
                         log.LogError(requestFailedException, "Request failed");
@@ -81,15 +91,15 @@ namespace Gamezure.VmPoolManager
             return exists;
         }
 
-        private static async Task<VirtualNetwork> EnsureVnet(VmCreateParams vmCreateParams, VirtualNetworksOperations virtualNetworksClient, ResourceGroup resourceGroup)
+        private async Task<VirtualNetwork> EnsureVnet(VmCreateParams vmCreateParams, ResourceGroup resourceGroup)
         {
             VirtualNetwork vnet;
-            var vnetResponse = await virtualNetworksClient.GetAsync(resourceGroup.Name, vmCreateParams.VnetName);
+            var vnetResponse = await this.virtualNetworksClient.GetAsync(resourceGroup.Name, vmCreateParams.VnetName);
             
             if (vnetResponse.Value is null)
             {
                 
-                vnet = await CreateVirtualNetwork(vmCreateParams, virtualNetworksClient, resourceGroup);
+                vnet = await CreateVirtualNetwork(vmCreateParams, this.virtualNetworksClient, resourceGroup);
                 if (vnet is null)
                 {
                     throw new Exception($"Could not create vnet {vmCreateParams.VnetName} in resource group {resourceGroup.Name}");
@@ -153,15 +163,15 @@ namespace Gamezure.VmPoolManager
             return windowsVM;
         }
 
-        public async Task<NetworkInterface> CreateNetworkInterfaceAsync(NetworkManagementClient networkManagementClient, ResourceGroup resourceGroup, VmCreateParams vmCreateParams, VirtualNetwork vnet)
+        private async Task<NetworkInterface> CreateNetworkInterfaceAsync(ResourceGroup resourceGroup, VmCreateParams vmCreateParams, VirtualNetwork vnet)
         {
-            var ipAddress = await PublicIpAddress(networkManagementClient, resourceGroup, vmCreateParams);
-            var nic = await CreateNic(networkManagementClient, resourceGroup, vmCreateParams, vnet, ipAddress);
+            var ipAddress = await PublicIpAddress(resourceGroup, vmCreateParams);
+            var nic = await CreateNic(resourceGroup, vmCreateParams, vnet, ipAddress);
 
             return nic;
         }
 
-        private static async Task<NetworkInterface> CreateNic(NetworkManagementClient networkManagementClient, ResourceGroup resourceGroup,
+        private async Task<NetworkInterface> CreateNic(ResourceGroup resourceGroup,
             VmCreateParams vmCreateParams, VirtualNetwork vnet, PublicIPAddress ipAddress)
         {
             // Create Network interface
@@ -180,14 +190,14 @@ namespace Gamezure.VmPoolManager
             };
             nic.IpConfigurations.Add(networkInterfaceIpConfiguration);
             
-            nic = await networkManagementClient.NetworkInterfaces
+            nic = await this.networkManagementClient.NetworkInterfaces
                 .StartCreateOrUpdate(resourceGroup.Name, vmCreateParams.Name + "_nic", nic)
                 .WaitForCompletionAsync();
             
             return nic;
         }
 
-        private static async Task<PublicIPAddress> PublicIpAddress(NetworkManagementClient networkManagementClient, ResourceGroup resourceGroup,
+        private async Task<PublicIPAddress> PublicIpAddress(ResourceGroup resourceGroup,
             VmCreateParams vmCreateParams)
         {
             // Create IP Address
@@ -199,7 +209,7 @@ namespace Gamezure.VmPoolManager
             };
 
 
-            ipAddress = await networkManagementClient.PublicIPAddresses
+            ipAddress = await this.networkManagementClient.PublicIPAddresses
                 .StartCreateOrUpdate(resourceGroup.Name, vmCreateParams.Name + "_ip", ipAddress)
                 .WaitForCompletionAsync();
             return ipAddress;

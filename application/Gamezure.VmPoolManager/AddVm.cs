@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Web.Http;
 using Azure.ResourceManager.Compute.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -32,18 +34,43 @@ namespace Gamezure.VmPoolManager
             //     : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
 
 
-            var vmCreateParams = new PoolManager.VmCreateParams(
-                "gamezure-vm",
-                "gamezure-user",
-                Guid.NewGuid().ToString(),
-                "gamezure-vmpool-vnet",
-                "gamezure-vmpool-rg",
-                "westeurope"
-            );
-            
-            VirtualMachine vm = await new PoolManager(log).CreateVm(vmCreateParams);
 
-            return new OkObjectResult(vm);
+            string resourceGroupName = "gamezure-vmpool-rg";
+
+            string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
+            var poolManager = new PoolManager(log, subscriptionId);
+            
+            bool resourceGroupExists = await poolManager.GuardResourceGroup(resourceGroupName);
+            if (!resourceGroupExists)
+            {
+                return new InternalServerErrorResult();
+            }
+
+            int vmCount = 3;
+            List<VirtualMachine> vms = new List<VirtualMachine>(vmCount);
+            List<Task<VirtualMachine>> tasks = new List<Task<VirtualMachine>>(vmCount);
+            
+            for (int i = 0; i < vmCount; i++)
+            {
+                var vmCreateParams = new PoolManager.VmCreateParams(
+                    $"gamezure-vm-{i}",
+                    "gamezure-user",
+                    Guid.NewGuid().ToString(),
+                    "gamezure-vmpool-vnet",
+                    resourceGroupName,
+                    "westeurope"
+                );
+                
+                var item = poolManager.CreateVm(vmCreateParams);
+                tasks.Add(item);
+            }
+
+            foreach (Task<VirtualMachine> task in tasks)
+            {
+                vms.Add(await task);
+            }
+
+            return new OkObjectResult(vms);
         }
     }
 }
