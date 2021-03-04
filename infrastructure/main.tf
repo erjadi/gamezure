@@ -16,7 +16,7 @@ provider "azurerm" {
 
 locals {
   management_prefix = "${var.prefix}-management"
-  vmpool_prefix = "${var.prefix}-vmpool"
+  vmpool_prefix     = "${var.prefix}-vmpool"
 }
 
 resource "azurerm_resource_group" "rg_management" {
