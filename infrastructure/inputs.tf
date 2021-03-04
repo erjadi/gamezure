@@ -11,8 +11,8 @@ variable "prefix" {
 }
 
 variable "tags" {
-  type    = list(string)
-  default = []
+  type    = map(string)
+  default = {}
 }
 
 variable "sp_client_id" {
