@@ -49,28 +49,8 @@ resource "azurerm_subnet" "subnet_vmpool" {
   address_prefixes     = ["10.0.2.0/24"]
 }
 
-
-resource "azurerm_cosmosdb_account" "cosmosdb_account" {
-  name                          = "${local.management_prefix}-cosmosdb"
-  location                      = azurerm_resource_group.rg_management.location
-  resource_group_name           = azurerm_resource_group.rg_management.name
-  offer_type                    = "standard"
-  kind                          = "GlobalDocumentDB"
-  enable_free_tier              = var.use_cosmosdb_free_tier
-  analytical_storage_enabled    = false
-  public_network_access_enabled = false
-
-  capabilities {
-    name = "EnableServerless"
-  }
-
-  consistency_policy {
-    consistency_level = "Strong"
-  }
-
-  geo_location {
-    location          = azurerm_resource_group.rg_management.location
-    failover_priority = 0
-  }
-
+module "cosmosdb" {
+  source         = "./cosmosdb"
+  resource_group = azurerm_resource_group.rg_management
+  tags           = var.tags
 }
