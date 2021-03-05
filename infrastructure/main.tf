@@ -29,7 +29,7 @@ resource "azurerm_resource_group" "rg_vmpool" {
   location = var.location
 }
 
-resource "azurerm_role_assignment" "example" {
+resource "azurerm_role_assignment" "contributor_role_assignment" {
   scope                = azurerm_resource_group.rg_vmpool.id
   role_definition_name = "Contributor"
   principal_id         = var.sp_client_id
