@@ -20,7 +20,7 @@ locals {
 }
 
 resource "azurerm_resource_group" "rg_management" {
-  name     = "${var.prefix}-management-rg"
+  name     = "${local.management_prefix}-rg"
   location = var.location
 }
 
