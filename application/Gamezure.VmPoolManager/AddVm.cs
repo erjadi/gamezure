@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using System.Web.Http;
+using Azure.Cosmos;
 using Azure.ResourceManager.Compute.Models;
+using Gamezure.VmPoolManager.Repository;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Gamezure.VmPoolManager
 {
@@ -32,10 +31,21 @@ namespace Gamezure.VmPoolManager
             // return name != null
             //     ? (ActionResult) new OkObjectResult($"Hello, {name}")
             //     : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
-
-
-
+            
             string resourceGroupName = "gamezure-vmpool-rg";
+
+
+            string connectionString = Environment.GetEnvironmentVariable("CosmosDb");
+            var poolRepository = new PoolRepository(connectionString);
+            
+            var pool = new Pool
+            {
+                Id = Guid.NewGuid().ToString(),
+                ResourceGroupName = resourceGroupName
+            };
+
+            ItemResponse<Pool> response = await poolRepository.Save(pool);
+
 
             string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
             var poolManager = new PoolManager(log, subscriptionId);
