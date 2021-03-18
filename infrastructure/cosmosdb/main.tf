@@ -37,7 +37,7 @@ resource "azurerm_cosmosdb_sql_container" "gamezure_db_vmpool_container" {
   account_name        = azurerm_cosmosdb_account.cosmosdb_account.name
   database_name       = azurerm_cosmosdb_sql_database.gamezure_db.name
 
-  partition_key_path    = "/VmPoolId"
+  partition_key_path    = "/id"
   partition_key_version = 1
   # Must not set "throughput" for serverless
 
