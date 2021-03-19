@@ -18,5 +18,10 @@ namespace Gamezure.VmPoolManager.Repository
         {
             return this.container.CreateItemAsync(pool);
         }
+
+        public Task<ItemResponse<Pool>> Get(string poolId)
+        {
+            return this.container.ReadItemAsync<Pool>(poolId, new PartitionKey(poolId));
+        }
     }
 }

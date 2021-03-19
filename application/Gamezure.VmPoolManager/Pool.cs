@@ -8,6 +8,7 @@ namespace Gamezure.VmPoolManager
         [JsonPropertyName("id")]
         public string Id { get; set; }
         public string ResourceGroupName { get; set; }
+        public int DesiredVmCount { get; set; }
 
         public override string ToString()
         {
