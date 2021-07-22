@@ -89,13 +89,14 @@ resource "azurerm_function_app" "function" {
   enabled                = true
   enable_builtin_logging = true
   https_only             = true
+  version                 = "~3"
 //  identity {
 //    type = ""
 //  }
 
   connection_string {
     name  = "CosmosDb"
-    type  = "DocDb"
+    type  = "Custom"
     value = module.cosmosdb.connection_strings[0]
   }
 
