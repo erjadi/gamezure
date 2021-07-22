@@ -15,6 +15,15 @@ Azure Game Streaming VM management
 | `TF_VAR_sp_client_id` | ID of the Azure Service Principal who should have permissions to change the VM pool |
 
 
+# Setting up infrastructure in Azure
+## Init Terraform:
+
+    terraform init -backend-config='.\config\backend.local.config.tf'
+
+## Apply
+    
+    terraform apply
+
 # Development Prerequisites
 * An [Azure Subscription](https://azure.microsoft.com/en-us/solutions/gaming/)
 * [An Azure Service Principal](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal)
