@@ -6,7 +6,7 @@ resource "azurerm_cosmosdb_account" "cosmosdb_account" {
   kind                          = "GlobalDocumentDB"
   enable_free_tier              = var.use_cosmosdb_free_tier
   analytical_storage_enabled    = false
-  public_network_access_enabled = false
+  public_network_access_enabled = true
 
   capabilities {
     name = "EnableServerless"
