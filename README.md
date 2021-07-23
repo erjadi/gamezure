@@ -12,7 +12,7 @@ Azure Game Streaming VM management
 |----------|----------|
 | `AZURE_SUBSCRIPTION_ID` | Azure Subscription ID; `id` property when executing `az account show` |
 | `AZURE_TENANT_ID` | Azure Tenant ID; `tenantId` property when executing `az account show` |
-| `TF_VAR_sp_client_id` | ID of the Azure Service Principal who should have permissions to change the VM pool |
+| `TF_VAR_sp_client_id` | ID of the Azure Service Principal who should have permissions to change the VM pool, `appId` in `az ad sp list --show-mine` |
 
 
 # Setting up infrastructure in Azure
