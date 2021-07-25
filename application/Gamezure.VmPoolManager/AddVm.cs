@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
-using System.Web.Http;
 using Azure.ResourceManager.Compute.Models;
 using Gamezure.VmPoolManager.Repository;
 using Microsoft.AspNetCore.Mvc;
@@ -31,8 +31,17 @@ namespace Gamezure.VmPoolManager
             string connectionString = Environment.GetEnvironmentVariable("CosmosDb");
             var poolRepository = new PoolRepository(connectionString);
 
-            ItemResponse<Pool> response = await poolRepository.Get(poolId);
-            Pool pool = response.Resource;
+            Pool pool = null;
+            try
+            {
+                ItemResponse<Pool> response = await poolRepository.Get(poolId);
+                pool = response.Resource;
+            }
+            catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotFound)
+            {
+                return new NotFoundObjectResult($"Could not find VM Pool {poolId}");
+            }
+
             string resourceGroupName = pool.ResourceGroupName;
 
             string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
@@ -41,7 +50,7 @@ namespace Gamezure.VmPoolManager
             bool resourceGroupExists = await poolManager.GuardResourceGroup(resourceGroupName);
             if (!resourceGroupExists)
             {
-                return new InternalServerErrorResult();
+                return new NotFoundObjectResult($"Resource group {resourceGroupName} was not found.");
             }
 
             int vmCount = pool.DesiredVmCount;
