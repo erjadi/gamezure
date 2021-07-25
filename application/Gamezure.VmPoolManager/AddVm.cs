@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web.Http;
-using Azure.Cosmos;
 using Azure.ResourceManager.Compute.Models;
 using Gamezure.VmPoolManager.Repository;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 
 namespace Gamezure.VmPoolManager
@@ -32,7 +32,7 @@ namespace Gamezure.VmPoolManager
             var poolRepository = new PoolRepository(connectionString);
 
             ItemResponse<Pool> response = await poolRepository.Get(poolId);
-            Pool pool = response.Value;
+            Pool pool = response.Resource;
             string resourceGroupName = pool.ResourceGroupName;
 
             string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");

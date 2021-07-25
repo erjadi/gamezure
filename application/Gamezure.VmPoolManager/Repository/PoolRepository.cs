@@ -1,16 +1,25 @@
 ﻿using System.Threading.Tasks;
-using Azure.Cosmos;
+using Microsoft.Azure.Cosmos;
 
 namespace Gamezure.VmPoolManager.Repository
 {
     public class PoolRepository
     {
         private readonly CosmosClient client;
-        private readonly CosmosContainer container;
+
+        private readonly Container container;
 
         public PoolRepository(string connectionString)
         {
-            this.client = new CosmosClient(connectionString);
+            var clientOptions = new CosmosClientOptions
+            {
+                SerializerOptions = new CosmosSerializationOptions
+                {
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                }
+            };
+            this.client = new CosmosClient(connectionString, clientOptions);
+            
             this.container = client.GetContainer("gamezure-db", "vmpool");
         }
 

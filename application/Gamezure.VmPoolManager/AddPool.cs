@@ -1,13 +1,13 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
-using Azure.Cosmos;
 using Gamezure.VmPoolManager.Repository;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -27,10 +27,24 @@ namespace Gamezure.VmPoolManager
             
             string connectionString = Environment.GetEnvironmentVariable("CosmosDb");
             var poolRepository = new PoolRepository(connectionString);
-            
-            ItemResponse<Pool> response = await poolRepository.Save(pool);
 
-            return new OkObjectResult(response.Value);
+            try
+            {
+                ItemResponse<Pool> response = await poolRepository.Save(pool);
+                return new OkObjectResult(response.Resource);
+            }
+            catch (CosmosException e) when (e.StatusCode == HttpStatusCode.Conflict)
+            {
+                return new ConflictResult();
+            }
+            catch (CosmosException e) when (e.StatusCode == HttpStatusCode.BadRequest)
+            {
+                return new BadRequestObjectResult(e.ResponseBody);
+            }
+            catch (CosmosException e)
+            {
+                return new ObjectResult(e);
+            }
         }
     }
 }
