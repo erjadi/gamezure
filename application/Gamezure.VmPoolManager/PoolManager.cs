@@ -53,7 +53,7 @@ namespace Gamezure.VmPoolManager
             Response<ResourceGroup> rgResponse = await resourceGroupsClient.GetAsync(vmCreateParams.ResourceGroupName);
             ResourceGroup resourceGroup = rgResponse.Value;
             
-            VirtualNetwork vnet = await EnsureVnet(vmCreateParams, resourceGroup);
+            VirtualNetwork vnet = await EnsureVnet(vmCreateParams.ResourceGroupName, vmCreateParams.ResourceLocation, vmCreateParams.VnetName);
 
             NetworkInterface nic = await CreateNetworkInterfaceAsync(resourceGroup, vmCreateParams, vnet);
             VirtualMachine vm = await CreateWindowsVm(resourceGroup, vmCreateParams, nic, virtualMachinesClient); 
@@ -91,26 +91,23 @@ namespace Gamezure.VmPoolManager
             return exists;
         }
 
-        private async Task<VirtualNetwork> EnsureVnet(VmCreateParams vmCreateParams, ResourceGroup resourceGroup)
+        public async Task<VirtualNetwork> EnsureVnet(string resourceGroupName, string location, string vnetName)
         {
             VirtualNetwork vnet;
-            var vnetResponse = await this.virtualNetworksClient.GetAsync(resourceGroup.Name, vmCreateParams.VnetName);
-            
-            if (vnetResponse.Value is null)
+            var vnetList = this.virtualNetworksClient.List(resourceGroupName).ToList();
+            bool vnetExists = vnetList.Exists(network => network.Name.Equals(vnetName));
+
+            if (!vnetExists)
             {
-                
-                vnet = await CreateVirtualNetwork(vmCreateParams, this.virtualNetworksClient, resourceGroup);
+                vnet = await CreateVirtualNetwork(vnetName, this.virtualNetworksClient, resourceGroupName, location);
                 if (vnet is null)
                 {
-                    throw new Exception($"Could not create vnet {vmCreateParams.VnetName} in resource group {resourceGroup.Name}");
+                    throw new Exception($"Could not create vnet {vnetName} in resource group {resourceGroupName}");
                 }
             }
-            else
-            {
-                vnet = vnetResponse.Value;
-            }
+            var vnetResponse = await this.virtualNetworksClient.GetAsync(resourceGroupName, vnetName);
 
-            return vnet;
+            return vnetResponse.Value;
         }
 
         public async Task<ResourceGroup> CreateResourceGroup(string resourceGroupName, string region)
@@ -119,16 +116,24 @@ namespace Gamezure.VmPoolManager
             return resourceGroupResponse.Value;
         }
 
-        private static async Task<VirtualNetwork> CreateVirtualNetwork(VmCreateParams vmCreateParams,
-            VirtualNetworksOperations virtualNetworksClient, ResourceGroup resourceGroup)
+        private static async Task<VirtualNetwork> CreateVirtualNetwork(string vnetName,
+            VirtualNetworksOperations virtualNetworksClient, string resourceGroupName, string location)
         {
             var vnet = new VirtualNetwork
             {
-                Location = vmCreateParams.ResourceLocation,
-                Subnets = { }
+                Location = location,
+                AddressSpace = new AddressSpace()
+                {
+                    AddressPrefixes = { "10.0.0.0/16" }
+                }
             };
+            vnet.Subnets.Add(new Subnet
+            {
+                Name = resourceGroupName + "-subnet",
+                AddressPrefix = "10.0.0.0/24",
+            });
 
-            await virtualNetworksClient.StartCreateOrUpdateAsync(resourceGroup.Name, vmCreateParams.VnetName, vnet);
+            await virtualNetworksClient.StartCreateOrUpdateAsync(resourceGroupName, vnetName, vnet);
             return vnet;
         }
 

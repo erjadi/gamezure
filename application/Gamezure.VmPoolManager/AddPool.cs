@@ -27,11 +27,13 @@ namespace Gamezure.VmPoolManager
             
             string connectionString = Environment.GetEnvironmentVariable("CosmosDb");
             var poolRepository = new PoolRepository(connectionString);
-
+            
+            string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
+            var poolManager = new PoolManager(log, subscriptionId);
+            
             try
             {
                 ItemResponse<Pool> response = await poolRepository.Save(pool);
-                return new OkObjectResult(response.Resource);
             }
             catch (CosmosException e) when (e.StatusCode == HttpStatusCode.Conflict)
             {
@@ -45,6 +47,12 @@ namespace Gamezure.VmPoolManager
             {
                 return new ObjectResult(e);
             }
+
+            await poolManager.CreateResourceGroup(pool.ResourceGroupName, pool.Location);
+            string vnetName = pool.Id + "vnet";
+            await poolManager.EnsureVnet(pool.ResourceGroupName, pool.Location, vnetName);
+            
+            return new OkResult();
         }
     }
 }

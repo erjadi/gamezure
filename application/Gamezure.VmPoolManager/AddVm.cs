@@ -42,17 +42,16 @@ namespace Gamezure.VmPoolManager
                 return new NotFoundObjectResult($"Could not find VM Pool {poolId}");
             }
 
-            string resourceGroupName = pool.ResourceGroupName;
-
             string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
             var poolManager = new PoolManager(log, subscriptionId);
             
-            bool resourceGroupExists = await poolManager.GuardResourceGroup(resourceGroupName);
+            bool resourceGroupExists = await poolManager.GuardResourceGroup(pool.ResourceGroupName);
             if (!resourceGroupExists)
             {
-                return new NotFoundObjectResult($"Resource group {resourceGroupName} was not found.");
+                return new NotFoundObjectResult($"Resource group {pool.ResourceGroupName} was not found.");
             }
 
+            string vnetName = "gamezure-vmpool-vnet";
             int vmCount = pool.DesiredVmCount;
             List<VirtualMachine> vms = new List<VirtualMachine>(vmCount);
             List<Task<VirtualMachine>> tasks = new List<Task<VirtualMachine>>(vmCount);
@@ -63,9 +62,9 @@ namespace Gamezure.VmPoolManager
                     $"gamezure-vm-{i}",
                     "gamezure-user",
                     Guid.NewGuid().ToString(),
-                    "gamezure-vmpool-vnet",
-                    resourceGroupName,
-                    "westeurope"
+                    vnetName,
+                    pool.ResourceGroupName,
+                    pool.Location
                 );
                 
                 var item = poolManager.CreateVm(vmCreateParams);
