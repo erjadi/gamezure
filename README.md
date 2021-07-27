@@ -29,3 +29,6 @@ Azure Game Streaming VM management
 * [An Azure Service Principal](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal)
 * [.NET Core 3.1 SDK](https://dot.net)
 * CosmosDB, either on Azure, or using the [CosmosDB Emulator](https://docs.microsoft.com/en-us/azure/cosmos-db/local-emulator?tabs=ssl-netstd21)
+
+# Docs
+*  [Application flow](./docs/flow.md)
