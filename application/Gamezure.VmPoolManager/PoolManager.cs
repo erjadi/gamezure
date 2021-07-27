@@ -113,6 +113,12 @@ namespace Gamezure.VmPoolManager
             return vnet;
         }
 
+        public async Task<ResourceGroup> CreateResourceGroup(string resourceGroupName, string region)
+        {
+            var resourceGroupResponse = await resourceGroupsClient.CreateOrUpdateAsync(resourceGroupName, new ResourceGroup(region));
+            return resourceGroupResponse.Value;
+        }
+
         private static async Task<VirtualNetwork> CreateVirtualNetwork(VmCreateParams vmCreateParams,
             VirtualNetworksOperations virtualNetworksClient, ResourceGroup resourceGroup)
         {
