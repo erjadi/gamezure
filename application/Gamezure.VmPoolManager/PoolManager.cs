@@ -50,13 +50,11 @@ namespace Gamezure.VmPoolManager
         
         public async Task<VirtualMachine> CreateVm(VmCreateParams vmCreateParams)
         {
-            Response<ResourceGroup> rgResponse = await resourceGroupsClient.GetAsync(vmCreateParams.ResourceGroupName);
-            ResourceGroup resourceGroup = rgResponse.Value;
-            
             VirtualNetwork vnet = await EnsureVnet(vmCreateParams.ResourceGroupName, vmCreateParams.ResourceLocation, vmCreateParams.VnetName);
 
-            NetworkInterface nic = await CreateNetworkInterfaceAsync(resourceGroup, vmCreateParams, vnet);
-            VirtualMachine vm = await CreateWindowsVm(resourceGroup, vmCreateParams, nic, virtualMachinesClient); 
+            var ipAddress = await CreatePublicIpAddressAsync(vmCreateParams.ResourceGroupName, vmCreateParams.ResourceLocation, vmCreateParams.Name);
+            var nic = await CreateNetworkInterfaceAsync(vmCreateParams.ResourceGroupName, vmCreateParams.ResourceLocation, vmCreateParams.Name, vnet.Subnets.First().Id, ipAddress.Id);
+            VirtualMachine vm = await CreateWindowsVmAsync(vmCreateParams, nic.Id); 
 
             return vm;
         }
@@ -137,12 +135,11 @@ namespace Gamezure.VmPoolManager
             return vnet;
         }
 
-        public async Task<VirtualMachine> CreateWindowsVm(ResourceGroup resourceGroup, VmCreateParams vmCreateParams,
-            NetworkInterface nic, VirtualMachinesOperations computeClientVirtualMachines)
+        public async Task<VirtualMachine> CreateWindowsVmAsync(VmCreateParams vmCreateParams, string nicId)
         {
             // Create Windows VM
 
-            var windowsVM = new VirtualMachine(resourceGroup.Location)
+            var windowsVM = new VirtualMachine(vmCreateParams.ResourceLocation)
             {
                 OsProfile = new OSProfile
                 {
@@ -166,63 +163,54 @@ namespace Gamezure.VmPoolManager
             };
             
             
-            windowsVM.NetworkProfile.NetworkInterfaces.Add(new NetworkInterfaceReference { Id = nic.Id });
+            windowsVM.NetworkProfile.NetworkInterfaces.Add(new NetworkInterfaceReference { Id = nicId });
 
-            windowsVM = await (await computeClientVirtualMachines
-                .StartCreateOrUpdateAsync(resourceGroup.Name, vmCreateParams.Name, windowsVM)).WaitForCompletionAsync();
+            windowsVM = await (await this.virtualMachinesClient
+                .StartCreateOrUpdateAsync(vmCreateParams.ResourceGroupName, vmCreateParams.Name, windowsVM)).WaitForCompletionAsync();
 
             return windowsVM;
         }
 
-        private async Task<NetworkInterface> CreateNetworkInterfaceAsync(ResourceGroup resourceGroup, VmCreateParams vmCreateParams, VirtualNetwork vnet)
-        {
-            var ipAddress = await PublicIpAddress(resourceGroup, vmCreateParams);
-            var nic = await CreateNic(resourceGroup, vmCreateParams, vnet, ipAddress);
-
-            return nic;
-        }
-
-        private async Task<NetworkInterface> CreateNic(ResourceGroup resourceGroup,
-            VmCreateParams vmCreateParams, VirtualNetwork vnet, PublicIPAddress ipAddress)
+        public async Task<NetworkInterface> CreateNetworkInterfaceAsync(string rgName, string location, string namePrefix, string subnetId, string ipAddressId)
         {
             // Create Network interface
             var networkInterfaceIpConfiguration = new NetworkInterfaceIPConfiguration
             {
                 Name = "Primary",
                 Primary = true,
-                Subnet = new Subnet { Id = vnet.Subnets.First().Id },
+                Subnet = new Subnet { Id = subnetId },
                 PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
-                PublicIPAddress = new PublicIPAddress { Id = ipAddress.Id }
+                PublicIPAddress = new PublicIPAddress { Id = ipAddressId }
             };
             
             var nic = new NetworkInterface()
             {
-                Location = resourceGroup.Location
+                Location = location
             };
             nic.IpConfigurations.Add(networkInterfaceIpConfiguration);
             
             nic = await this.networkManagementClient.NetworkInterfaces
-                .StartCreateOrUpdate(resourceGroup.Name, vmCreateParams.Name + "_nic", nic)
+                .StartCreateOrUpdate(rgName, namePrefix + "_nic", nic)
                 .WaitForCompletionAsync();
             
             return nic;
         }
 
-        private async Task<PublicIPAddress> PublicIpAddress(ResourceGroup resourceGroup,
-            VmCreateParams vmCreateParams)
+        public async Task<PublicIPAddress> CreatePublicIpAddressAsync(string rgName, string location, string namePrefix)
         {
             // Create IP Address
             var ipAddress = new PublicIPAddress()
             {
                 PublicIPAddressVersion = IPVersion.IPv4,
                 PublicIPAllocationMethod = IPAllocationMethod.Dynamic,
-                Location = resourceGroup.Location,
+                Location = location,
             };
 
 
             ipAddress = await this.networkManagementClient.PublicIPAddresses
-                .StartCreateOrUpdate(resourceGroup.Name, vmCreateParams.Name + "_ip", ipAddress)
+                .StartCreateOrUpdate(rgName, namePrefix + "_ip", ipAddress)
                 .WaitForCompletionAsync();
+            
             return ipAddress;
         }
 
