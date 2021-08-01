@@ -55,7 +55,8 @@ namespace Gamezure.VmPoolManager
             
             VirtualNetwork vnet = await EnsureVnet(vmCreateParams.ResourceGroupName, vmCreateParams.ResourceLocation, vmCreateParams.VnetName);
 
-            NetworkInterface nic = await CreateNetworkInterfaceAsync(vmCreateParams, vnet);
+            var ipAddress = await CreatePublicIpAddressAsync(vmCreateParams.ResourceGroupName, vmCreateParams.ResourceLocation, vmCreateParams.Name);
+            var nic = await CreateNetworkInterfaceAsync(vmCreateParams.ResourceGroupName, vmCreateParams.ResourceLocation, vmCreateParams.Name, vnet.Subnets.First().Id, ipAddress.Id);
             VirtualMachine vm = await CreateWindowsVm(resourceGroup, vmCreateParams, nic, virtualMachinesClient); 
 
             return vm;
@@ -174,15 +175,7 @@ namespace Gamezure.VmPoolManager
             return windowsVM;
         }
 
-        private async Task<NetworkInterface> CreateNetworkInterfaceAsync(VmCreateParams vmCreateParams, VirtualNetwork vnet)
-        {
-            var ipAddress = await PublicIpAddress(vmCreateParams.ResourceGroupName, vmCreateParams.ResourceLocation, vmCreateParams.Name);
-            var nic = await CreateNic(vmCreateParams.ResourceGroupName, vmCreateParams.ResourceLocation, vmCreateParams.Name, vnet.Subnets.First().Id, ipAddress.Id);
-
-            return nic;
-        }
-
-        private async Task<NetworkInterface> CreateNic(string rgName, string location, string namePrefix, string subnetId, string ipAddressId)
+        public async Task<NetworkInterface> CreateNetworkInterfaceAsync(string rgName, string location, string namePrefix, string subnetId, string ipAddressId)
         {
             // Create Network interface
             var networkInterfaceIpConfiguration = new NetworkInterfaceIPConfiguration
@@ -207,7 +200,7 @@ namespace Gamezure.VmPoolManager
             return nic;
         }
 
-        public async Task<PublicIPAddress> PublicIpAddress(string rgName, string location, string namePrefix)
+        public async Task<PublicIPAddress> CreatePublicIpAddressAsync(string rgName, string location, string namePrefix)
         {
             // Create IP Address
             var ipAddress = new PublicIPAddress()
