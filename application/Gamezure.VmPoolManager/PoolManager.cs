@@ -47,7 +47,7 @@ namespace Gamezure.VmPoolManager
         {
         }
         
-        public async Task<IVirtualMachine> CreateVm(VmCreateParams vmCreateParams)
+        public async Task<Vm> CreateVm(VmCreateParams vmCreateParams)
         {
             var tasks = new List<Task>(3);
             
@@ -74,8 +74,15 @@ namespace Gamezure.VmPoolManager
             Task.WaitAll(vmTasks.ToArray());
 
             var vm = await FluentCreateWindowsVm(vmCreateParams, publicNic.Result, gameNic.Result);
+            var vmResult = new Vm
+            {
+                Name = vm.Name,
+                PoolId = vmCreateParams.ResourceGroupName,
+                PublicIp = vm.GetPrimaryPublicIPAddress().IPAddress,
+                ResourceId = vm.Id
+            };
 
-            return vm;
+            return vmResult;
         }
 
         public async Task<bool> GuardResourceGroup(string name)

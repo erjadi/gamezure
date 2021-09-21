@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Gamezure.VmPoolManager.Repository;
 using Microsoft.Azure.Cosmos;
-using Microsoft.Azure.Management.Compute.Fluent;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -54,10 +53,10 @@ namespace Gamezure.VmPoolManager
             return outputs;
         }
 
-        private async Task<IVirtualMachine> VmResultTask(IDurableOrchestrationContext context, Vm vm, Pool pool, List<string> outputs)
+        private async Task<Vm> VmResultTask(IDurableOrchestrationContext context, Vm vm, Pool pool, List<string> outputs)
         {
             var vmCreateParams = new VmCreateParams(vm.Name, "gamezure", "DzPY2uwGYxofahfD38CDrUjhc", pool.ResourceGroupName, pool.Location, pool.Net);
-            var vmResultTask = await context.CallActivityAsync<IVirtualMachine>("CreateVmOrchestrator_CreateWindowsVm", vmCreateParams);
+            var vmResultTask = await context.CallActivityAsync<Vm>("CreateVmOrchestrator_CreateWindowsVm", vmCreateParams);
             outputs.Add($"Finished creation of {vmResultTask}");
             return vmResultTask;
         }
@@ -105,7 +104,7 @@ namespace Gamezure.VmPoolManager
         }
         
         [FunctionName("CreateVmOrchestrator_CreateWindowsVm")]
-        public async Task<IVirtualMachine> CreateWindowsVm([ActivityTrigger] VmCreateParams vmCreateParams, ILogger log)
+        public async Task<Vm> CreateWindowsVm([ActivityTrigger] VmCreateParams vmCreateParams, ILogger log)
         {
             log.LogInformation($"Creating Virtual Machine");
             

@@ -9,7 +9,6 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Cosmos;
-using Microsoft.Azure.Management.Compute.Fluent;
 using Microsoft.Extensions.Logging;
 
 namespace Gamezure.VmPoolManager
@@ -73,11 +72,11 @@ namespace Gamezure.VmPoolManager
             return new OkObjectResult(vms);
         }
 
-        private List<IVirtualMachine> CreateVirtualMachines(Pool pool, ILogger log = null)
+        private List<Vm> CreateVirtualMachines(Pool pool, ILogger log = null)
         {
             int vmCount = pool.Vms.Count;
-            var vms = new List<IVirtualMachine>(vmCount);
-            var tasks = new List<Task<IVirtualMachine>>(vmCount);
+            var vms = new List<Vm>(vmCount);
+            var tasks = new List<Task<Vm>>(vmCount);
 
             foreach (var vm in pool.Vms)
             {
