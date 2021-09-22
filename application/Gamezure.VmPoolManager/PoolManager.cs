@@ -4,15 +4,11 @@ using System.Threading.Tasks;
 using Azure;
 using Azure.Core;
 using Azure.Identity;
-using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.Resources;
 using Microsoft.Azure.Management.Compute.Fluent;
 using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.Network.Fluent;
-using ComputeManagementClient = Azure.ResourceManager.Compute.ComputeManagementClient;
-using NetworkManagementClient = Azure.ResourceManager.Network.NetworkManagementClient;
-using NetworkProfile = Azure.ResourceManager.Compute.Models.NetworkProfile;
 
 namespace Gamezure.VmPoolManager
 {
@@ -24,10 +20,7 @@ namespace Gamezure.VmPoolManager
         private readonly TokenCredential credential;
         private readonly IAzure azure;
         private readonly ResourcesManagementClient resourceClient;
-        private readonly ComputeManagementClient computeClient;
-        private readonly NetworkManagementClient networkManagementClient;
         private readonly ResourceGroupsOperations resourceGroupsClient;
-        private readonly VirtualMachinesOperations virtualMachinesClient;
 
         public PoolManager(string subscriptionId, TokenCredential credential, IAzure azure)
         {
@@ -36,11 +29,8 @@ namespace Gamezure.VmPoolManager
             this.azure = azure;
 
             resourceClient = new ResourcesManagementClient(this.subscriptionId, this.credential);
-            computeClient = new ComputeManagementClient(this.subscriptionId, this.credential);
-            networkManagementClient = new NetworkManagementClient(this.subscriptionId, this.credential);
             
             resourceGroupsClient = resourceClient.ResourceGroups;
-            virtualMachinesClient = computeClient.VirtualMachines;
         }
 
         public PoolManager(string subscriptionId, IAzure azure) : this(subscriptionId, new DefaultAzureCredential(), azure)
@@ -148,42 +138,6 @@ namespace Gamezure.VmPoolManager
                 .Create();
             
             return networkSecurityGroup;
-        }
-
-        public async Task<VirtualMachine> CreateWindowsVmAsync(VmCreateParams vmCreateParams, string nicId)
-        {
-            // Create Windows VM
-
-            var windowsVM = new VirtualMachine(vmCreateParams.ResourceLocation)
-            {
-                OsProfile = new OSProfile
-                {
-                    ComputerName = vmCreateParams.Name,
-                    AdminUsername = vmCreateParams.UserName,
-                    AdminPassword = vmCreateParams.UserPassword,
-                },
-                NetworkProfile = new NetworkProfile(),
-                StorageProfile = new StorageProfile
-                {
-                    ImageReference = new ImageReference
-                    {
-                        Offer = "WindowsServer",
-                        Publisher = "MicrosoftWindowsServer",
-                        Sku = "2019-Datacenter",
-                        Version = "latest"
-                    },
-                    // DataDisks = new List<DataDisk>()
-                },
-                HardwareProfile = new HardwareProfile { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
-            };
-            
-            
-            windowsVM.NetworkProfile.NetworkInterfaces.Add(new NetworkInterfaceReference { Id = nicId });
-
-            windowsVM = await (await this.virtualMachinesClient
-                .StartCreateOrUpdateAsync(vmCreateParams.ResourceGroupName, vmCreateParams.Name, windowsVM)).WaitForCompletionAsync();
-
-            return windowsVM;
         }
 
         public async Task<IVirtualMachine> FluentCreateWindowsVm(VmCreateParams vmCreateParams, INetworkInterface nicPublic, INetworkInterface nicGame, CancellationToken cancellationToken = default)

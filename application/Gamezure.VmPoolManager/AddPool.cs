@@ -29,8 +29,6 @@ namespace Gamezure.VmPoolManager
             [HttpTrigger(AuthorizationLevel.Function, "put", Route = null)]
             HttpRequest req, ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
             try
             {
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
