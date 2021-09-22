@@ -14,6 +14,7 @@ namespace Gamezure.VmPoolManager
         public string ResourceId { get; set; } = string.Empty;
         public string PublicIp { get; set; } = string.Empty;
         public ProvisioningState State { get; private set;  } = ProvisioningState.None;
+        public string Password { get; set; }
 
         /// <summary>
         /// Advance the state to the next possible state

@@ -55,10 +55,10 @@ namespace Gamezure.VmPoolManager
 
         private async Task<Vm> VmResultTask(IDurableOrchestrationContext context, Vm vm, Pool pool, List<string> outputs)
         {
-            var vmCreateParams = new VmCreateParams(vm.Name, vm.PoolId, "gamezure", "DzPY2uwGYxofahfD38CDrUjhc", pool.ResourceGroupName, pool.Location, pool.Net);
-            var vmResultTask = await context.CallActivityAsync<Vm>("CreateVmOrchestrator_CreateWindowsVm", vmCreateParams);
-            outputs.Add($"Finished creation of {vmResultTask}");
-            return vmResultTask;
+            var vmCreateParams = new VmCreateParams(vm.Name, vm.PoolId, "gamezure", vm.Password, pool.ResourceGroupName, pool.Location, pool.Net);
+            Vm vmResult = await context.CallActivityAsync<Vm>("CreateVmOrchestrator_CreateWindowsVm", vmCreateParams);
+            outputs.Add($"Finished creation of {vmResult}");
+            return vmResult;
         }
 
         [FunctionName("CreateVmOrchestrator_HttpStart")]
@@ -109,6 +109,16 @@ namespace Gamezure.VmPoolManager
             log.LogInformation($"Creating Virtual Machine");
             
             return await poolManager.CreateVm(vmCreateParams);
+        }
+        
+        [FunctionName("CreateVmOrchestrator_GeneratePassword")]
+        public string CreateWindowsVm([ActivityTrigger] IDurableActivityContext inputs, ILogger log)
+        {
+            log.LogInformation($"Generating Password");
+            var password = Guid.NewGuid().ToString();
+            log.LogInformation($"Password: {password}");
+
+            return password;
         }
     }
 }

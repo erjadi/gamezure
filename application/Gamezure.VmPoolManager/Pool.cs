@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -24,7 +25,8 @@ namespace Gamezure.VmPoolManager
                 var vm = new Vm
                 {
                     Name = $"{this.Id}-vm-{i}",
-                    PoolId = this.Id
+                    PoolId = this.Id,
+                    Password = Guid.NewGuid().ToString()
                 };
                 this.Vms.Add(vm);
             }
