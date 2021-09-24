@@ -115,15 +115,5 @@ namespace Gamezure.VmPoolManager
             
             return await poolManager.CreateVm(vmCreateParams);
         }
-        
-        [FunctionName("CreateVmOrchestrator_GeneratePassword")]
-        public string CreateWindowsVm([ActivityTrigger] IDurableActivityContext inputs, ILogger log)
-        {
-            log.LogInformation($"Generating Password");
-            var password = Guid.NewGuid().ToString();
-            log.LogInformation($"Password: {password}");
-
-            return password;
-        }
     }
 }
