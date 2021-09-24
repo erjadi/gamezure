@@ -13,6 +13,9 @@ namespace Gamezure.VmPoolManager
         public string PoolId { get; set; }
         public string ResourceId { get; set; } = string.Empty;
         public string PublicIp { get; set; } = string.Empty;
+        public string PublicIpId { get; set; } = string.Empty;
+        public string PublicNicId { get; set; } = string.Empty;
+        public string GameNicId { get; set; } = string.Empty;
         public ProvisioningState State { get; private set;  } = ProvisioningState.None;
         public string Password { get; set; }
 

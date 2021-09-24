@@ -51,34 +51,40 @@ namespace Gamezure.VmPoolManager
             tasks.Add(taskNsgGame);
             Task.WaitAll(tasks.ToArray());
 
-            var taskPip = await this.FluentCreatePublicIp(vmCreateParams);
+            var publicIp = await this.FluentCreatePublicIp(vmCreateParams);
 
             var vmTasks = new List<Task>(2);
-            var taskPublicNic = this.FluentCreatePublicNetworkConnection(
+            var taskNicPublic = this.FluentCreatePublicNetworkConnection(
                 vmCreateParams.Name,
                 taskVirtualNetwork.Result,
                 taskNsgPublic.Result,
-                taskPip,
+                publicIp,
                 vmCreateParams.Tags);
             
-            var taskGameNic = this.FluentCreateGameNetworkConnection(
+            var taskNicGame = this.FluentCreateGameNetworkConnection(
                 vmCreateParams.Name,
                 taskVirtualNetwork.Result,
                 taskNsgGame.Result,
                 vmCreateParams.Tags);
             
-            vmTasks.Add(taskPublicNic);
-            vmTasks.Add(taskGameNic);
+            vmTasks.Add(taskNicPublic);
+            vmTasks.Add(taskNicGame);
             
             Task.WaitAll(vmTasks.ToArray());
 
-            var vm = await FluentCreateWindowsVm(vmCreateParams, taskPublicNic.Result, taskGameNic.Result);
+            INetworkInterface nicPublic = taskNicPublic.Result;
+            var nicGame = taskNicGame.Result;
+            
+            var vm = await FluentCreateWindowsVm(vmCreateParams, nicPublic, nicGame);
             var vmResult = new Vm
             {
                 Name = vm.Name,
                 PoolId = vmCreateParams.PoolId,
-                PublicIp = vm.GetPrimaryPublicIPAddress().IPAddress,
-                ResourceId = vm.Id
+                ResourceId = vm.Id,
+                PublicIp = vm.GetPrimaryPublicIPAddress().IPAddress,    // same as publicIp.IPAddress
+                PublicIpId = publicIp.Id,
+                PublicNicId = nicPublic.Id,
+                GameNicId = nicGame.Id
             };
 
             return vmResult;
