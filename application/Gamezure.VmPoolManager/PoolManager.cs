@@ -54,22 +54,25 @@ namespace Gamezure.VmPoolManager
             var taskPip = await this.FluentCreatePublicIp(vmCreateParams);
 
             var vmTasks = new List<Task>(2);
-            var publicNic = this.FluentCreatePublicNetworkConnection(
+            var taskPublicNic = this.FluentCreatePublicNetworkConnection(
                 vmCreateParams.Name,
                 taskVirtualNetwork.Result,
                 taskNsgPublic.Result,
                 taskPip,
                 vmCreateParams.Tags);
             
-            var gameNic = this.FluentCreateGameNetworkConnection(
+            var taskGameNic = this.FluentCreateGameNetworkConnection(
                 vmCreateParams.Name,
                 taskVirtualNetwork.Result,
                 taskNsgGame.Result,
                 vmCreateParams.Tags);
             
+            vmTasks.Add(taskPublicNic);
+            vmTasks.Add(taskGameNic);
+            
             Task.WaitAll(vmTasks.ToArray());
 
-            var vm = await FluentCreateWindowsVm(vmCreateParams, publicNic.Result, gameNic.Result, vmCreateParams.Tags);
+            var vm = await FluentCreateWindowsVm(vmCreateParams, taskPublicNic.Result, taskGameNic.Result, vmCreateParams.Tags);
             var vmResult = new Vm
             {
                 Name = vm.Name,
