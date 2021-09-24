@@ -72,7 +72,7 @@ namespace Gamezure.VmPoolManager
             
             Task.WaitAll(vmTasks.ToArray());
 
-            var vm = await FluentCreateWindowsVm(vmCreateParams, taskPublicNic.Result, taskGameNic.Result, vmCreateParams.Tags);
+            var vm = await FluentCreateWindowsVm(vmCreateParams, taskPublicNic.Result, taskGameNic.Result);
             var vmResult = new Vm
             {
                 Name = vm.Name,
@@ -161,7 +161,6 @@ namespace Gamezure.VmPoolManager
             VmCreateParams vmCreateParams,
             INetworkInterface nicPublic,
             INetworkInterface nicGame,
-            IDictionary<string, string> tags,
             CancellationToken cancellationToken = default)
         {
             var imageReference = new ImageReference
@@ -181,7 +180,7 @@ namespace Gamezure.VmPoolManager
                 .WithAdminPassword(vmCreateParams.UserPassword)
                 .WithExistingSecondaryNetworkInterface(nicGame)
                 .WithSize(Microsoft.Azure.Management.Compute.Fluent.Models.VirtualMachineSizeTypes.StandardD3V2)
-                .WithTags(tags)
+                .WithTags(vmCreateParams.Tags)
                 .CreateAsync(cancellationToken);
 
             return vm;
