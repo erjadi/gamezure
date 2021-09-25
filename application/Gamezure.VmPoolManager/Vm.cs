@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Gamezure.VmPoolManager
 {
@@ -8,8 +9,8 @@ namespace Gamezure.VmPoolManager
         /// <summary>
         /// Effectively the name of the VM
         /// </summary>
-        // [JsonPropertyName("id")]
-        public string Name { get; set; }
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
         public string PoolId { get; set; }
         public string ResourceId { get; set; } = string.Empty;
         public string PublicIp { get; set; } = string.Empty;

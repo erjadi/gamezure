@@ -1,5 +1,6 @@
 ﻿using System;
 using Gamezure.VmPoolManager.Repository;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
@@ -26,8 +27,19 @@ namespace Gamezure.VmPoolManager
             var credentials = new AzureCredentialsFactory().FromServicePrincipal(clientId, clientSecret, tenantId, AzureEnvironment.AzureGlobalCloud);
             IAzure azure = Microsoft.Azure.Management.Fluent.Azure.Authenticate(credentials).WithSubscription(subscriptionId);
             
+            var clientOptions = new CosmosClientOptions
+            {
+                SerializerOptions = new CosmosSerializationOptions
+                {
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                }
+            };
+            var client = new CosmosClient(connectionString, clientOptions);
+            builder.Services.AddSingleton<CosmosClient>(s => client);
+            
             builder.Services.AddSingleton<IAzure>(s => azure);
-            builder.Services.AddSingleton(s => new PoolRepository(connectionString));
+            builder.Services.AddSingleton<PoolRepository>();
+            builder.Services.AddSingleton<VmRepository>();
             builder.Services.AddSingleton<PoolManager>();
         }
     }

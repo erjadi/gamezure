@@ -60,7 +60,7 @@ namespace Gamezure.VmPoolManager
 
         private async Task<Vm> VmResultTask(IDurableOrchestrationContext context, Vm vm, Pool pool, IDictionary<string, string> tags, List<string> outputs)
         {
-            var vmCreateParams = new VmCreateParams(vm.Name, vm.PoolId, "gamezure", vm.Password, pool.ResourceGroupName, pool.Location, tags, pool.Net);
+            var vmCreateParams = new VmCreateParams(vm.Id, vm.PoolId, "gamezure", vm.Password, pool.ResourceGroupName, pool.Location, tags, pool.Net);
             Vm vmResult = await context.CallActivityAsync<Vm>("CreateVmOrchestrator_CreateWindowsVm", vmCreateParams);
             outputs.Add($"Finished creation of {vmResult}");
             return vmResult;

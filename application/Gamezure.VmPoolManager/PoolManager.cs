@@ -60,7 +60,7 @@ namespace Gamezure.VmPoolManager
             var vm = await FluentCreateWindowsVm(vmCreateParams, nicPublic, nicGame);
             var vmResult = new Vm
             {
-                Name = vm.Name,
+                Id = vm.Name,
                 PoolId = vmCreateParams.PoolId,
                 ResourceId = vm.Id,
                 PublicIp = vm.GetPrimaryPublicIPAddress().IPAddress,    // same as publicIp.IPAddress

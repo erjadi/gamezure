@@ -24,7 +24,7 @@ namespace Gamezure.VmPoolManager
             {
                 var vm = new Vm
                 {
-                    Name = $"{this.Id}-vm-{i}",
+                    Id = $"{this.Id}-vm-{i}",
                     PoolId = this.Id,
                     Password = Guid.NewGuid().ToString()
                 };

@@ -17,11 +17,13 @@ namespace Gamezure.VmPoolManager
     public class AddPool
     {
         private readonly PoolRepository poolRepository;
+        private readonly VmRepository vmRepository;
         private readonly PoolManager poolManager;
 
-        public AddPool(PoolRepository poolRepository, PoolManager poolManager)
+        public AddPool(PoolRepository poolRepository, VmRepository vmRepository, PoolManager poolManager)
         {
             this.poolRepository = poolRepository;
+            this.vmRepository = vmRepository;
             this.poolManager = poolManager;
         }
         
@@ -68,6 +70,15 @@ namespace Gamezure.VmPoolManager
                 try
                 {
                     ItemResponse<Pool> response = await poolRepository.Save(pool);
+
+                    var awaitTasks = new List<Task>();
+                    foreach (var vm in pool.Vms)
+                    {
+                        var task = this.vmRepository.Save(vm);
+                        awaitTasks.Add(task);
+                    }
+
+                    await Task.WhenAll(awaitTasks);
                     return new OkObjectResult(response.Resource);
                 }
                 catch (CosmosException e) when (e.StatusCode == HttpStatusCode.Conflict)
