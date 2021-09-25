@@ -1,11 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Azure;
-using Azure.Core;
-using Azure.Identity;
 using Azure.ResourceManager.Compute.Models;
-using Azure.ResourceManager.Resources;
 using Microsoft.Azure.Management.Compute.Fluent;
 using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.Network.Fluent;
@@ -17,25 +13,11 @@ namespace Gamezure.VmPoolManager
     {
         private const string SUBNET_NAME_PUBLIC = "public";
         private const string SUBNET_NAME_GAME = "game";
-        private readonly string subscriptionId;
-        private readonly TokenCredential credential;
         private readonly IAzure azure;
-        private readonly ResourcesManagementClient resourceClient;
-        private readonly ResourceGroupsOperations resourceGroupsClient;
 
-        public PoolManager(string subscriptionId, TokenCredential credential, IAzure azure)
+        public PoolManager(IAzure azure)
         {
-            this.subscriptionId = subscriptionId;
-            this.credential = credential;
             this.azure = azure;
-
-            resourceClient = new ResourcesManagementClient(this.subscriptionId, this.credential);
-            
-            resourceGroupsClient = resourceClient.ResourceGroups;
-        }
-
-        public PoolManager(string subscriptionId, IAzure azure) : this(subscriptionId, new DefaultAzureCredential(), azure)
-        {
         }
         
         public async Task<Vm> CreateVm(VmCreateParams vmCreateParams)
@@ -90,17 +72,9 @@ namespace Gamezure.VmPoolManager
             return vmResult;
         }
 
-        public async Task<bool> GuardResourceGroup(string name)
+        public async Task<bool> GuardResourceGroup(string poolResourceGroupName)
         {
-            bool exists = false;
-            Response rgExists = await resourceGroupsClient.CheckExistenceAsync(name);
-
-            if (rgExists.Status == 204) // 204 - No Content
-            {
-                exists = true;
-            }
-
-            return exists;
+            return await this.azure.ResourceGroups.ContainAsync(poolResourceGroupName);
         }
 
         public INetwork FluentCreateVnet(

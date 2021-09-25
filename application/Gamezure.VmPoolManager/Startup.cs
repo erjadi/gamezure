@@ -28,11 +28,7 @@ namespace Gamezure.VmPoolManager
             
             builder.Services.AddSingleton<IAzure>(s => azure);
             builder.Services.AddSingleton(s => new PoolRepository(connectionString));
-            builder.Services.AddSingleton<PoolManager>(s => new PoolManager(subscriptionId, azure));
-            
-
-            
-
+            builder.Services.AddSingleton<PoolManager>();
         }
     }
 }
