@@ -51,8 +51,6 @@ namespace Gamezure.VmPoolManager
                     return new ObjectResult(e) {StatusCode = (int)e.StatusCode};
                 }
 
-                pool.InitializeVmList();
-
                 var tags = new Dictionary<string, string>
                 {
                     { "gamezure-pool-id", pool.Id }
@@ -70,15 +68,6 @@ namespace Gamezure.VmPoolManager
                 try
                 {
                     ItemResponse<Pool> response = await poolRepository.Save(pool);
-
-                    var awaitTasks = new List<Task>();
-                    foreach (var vm in pool.Vms)
-                    {
-                        var task = this.vmRepository.Save(vm);
-                        awaitTasks.Add(task);
-                    }
-
-                    await Task.WhenAll(awaitTasks);
                     return new OkObjectResult(response.Resource);
                 }
                 catch (CosmosException e) when (e.StatusCode == HttpStatusCode.Conflict)
