@@ -41,8 +41,10 @@ namespace Gamezure.VmPoolManager
                     { "gamezure-pool-id", pool.Id }
                 };
 
+                context.NewGuid();
+                var vms = this.poolManager.InitializeVmList(pool.Id, pool.DesiredVmCount, () => context.NewGuid().ToString());
                 var tasks = new List<Task>();
-                foreach (var vm in pool.Vms)
+                foreach (var vm in vms)
                 {
                     var vmResultTask = VmResultTask(context, vm, pool, tags, outputs);
                     tasks.Add(vmResultTask);

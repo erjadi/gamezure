@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.ResourceManager.Compute.Models;
@@ -70,6 +71,23 @@ namespace Gamezure.VmPoolManager
             };
 
             return vmResult;
+        }
+        
+        public List<Vm> InitializeVmList(string poolName, int desiredVmCount, Func<string> passwordFunction)
+        {
+            var vms = new List<Vm>(desiredVmCount);
+            for (int i = 0; i < desiredVmCount; i++)
+            {
+                var vm = new Vm
+                {
+                    Id = $"{poolName}-vm-{i}",
+                    PoolId = poolName,
+                    Password = passwordFunction()
+                };
+                vms.Add(vm);
+            }
+
+            return vms;
         }
 
         public async Task<bool> GuardResourceGroup(string poolResourceGroupName)

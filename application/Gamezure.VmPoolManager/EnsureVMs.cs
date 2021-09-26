@@ -74,16 +74,15 @@ namespace Gamezure.VmPoolManager
 
         private List<Vm> CreateVirtualMachines(Pool pool, ILogger log = null)
         {
-            int vmCount = pool.Vms.Count;
-            var vms = new List<Vm>(vmCount);
-            var tasks = new List<Task<Vm>>(vmCount);
+            var vms = this.poolManager.InitializeVmList(pool.Id, pool.DesiredVmCount, () => Guid.NewGuid().ToString());
+            var tasks = new List<Task<Vm>>(vms.Count);
             
             var tags = new Dictionary<string, string>
             {
                 { "gamezure-pool-id", pool.Id }
             };
 
-            foreach (var vm in pool.Vms)
+            foreach (var vm in vms)
             {
                 var vmCreateParams = new VmCreateParams(
                     vm.Id,
