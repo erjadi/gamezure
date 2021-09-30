@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos;
 
@@ -18,7 +19,33 @@ namespace Gamezure.VmPoolManager.Repository
 
         public Task<ItemResponse<Vm>> Save(Vm element)
         {
-            return this.container.CreateItemAsync(element);
+            return this.container.CreateItemAsync(element, new PartitionKey(element.PoolId));
+        }
+
+        private Task<ItemResponse<Vm>> UpsertItemAsync(Vm vm)
+        {
+            return this.container.UpsertItemAsync(vm, new PartitionKey(vm.PoolId));
+        }
+
+        public async Task<List<Vm>> UpsertMany(List<Vm> vms)
+        {
+            try
+            {
+                var tasks = new List<Task>(vms.Count);
+                foreach (var vm in vms)
+                {
+                    var task = UpsertItemAsync(vm);
+                    tasks.Add(task);
+                }
+
+                await Task.WhenAll(tasks);
+            }
+            catch (Exception e)
+            {
+                // Console.WriteLine(e);
+                throw;
+            }
+            return vms;
         }
 
         public Task<ItemResponse<Vm>> Get(string name)

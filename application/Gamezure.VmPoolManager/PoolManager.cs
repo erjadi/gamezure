@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.ResourceManager.Compute.Models;
+using Gamezure.VmPoolManager.Repository;
 using Microsoft.Azure.Management.Compute.Fluent;
 using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.Network.Fluent;
@@ -15,10 +16,12 @@ namespace Gamezure.VmPoolManager
         private const string SUBNET_NAME_PUBLIC = "public";
         private const string SUBNET_NAME_GAME = "game";
         private readonly IAzure azure;
+        private readonly VmRepository vmRepository;
 
-        public PoolManager(IAzure azure)
+        public PoolManager(IAzure azure, VmRepository vmRepository)
         {
             this.azure = azure;
+            this.vmRepository = vmRepository;
         }
         
         public async Task<Vm> CreateVm(VmCreateParams vmCreateParams)
@@ -69,6 +72,8 @@ namespace Gamezure.VmPoolManager
                 PublicNicId = nicPublic.Id,
                 GameNicId = nicGame.Id
             };
+
+            await this.vmRepository.Save(vmResult);
 
             return vmResult;
         }

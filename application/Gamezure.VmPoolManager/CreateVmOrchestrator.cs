@@ -16,11 +16,13 @@ namespace Gamezure.VmPoolManager
     public class CreateVmOrchestrator
     {
         private readonly PoolRepository poolRepository;
+        private readonly VmRepository vmRepository;
         private readonly PoolManager poolManager;
 
-        public CreateVmOrchestrator(PoolRepository poolRepository, PoolManager poolManager)
+        public CreateVmOrchestrator(PoolRepository poolRepository, VmRepository vmRepository, PoolManager poolManager)
         {
             this.poolRepository = poolRepository;
+            this.vmRepository = vmRepository;
             this.poolManager = poolManager;
         }
 
@@ -43,7 +45,7 @@ namespace Gamezure.VmPoolManager
 
                 context.NewGuid();
                 var vms = this.poolManager.InitializeVmList(pool.Id, pool.DesiredVmCount, () => context.NewGuid().ToString());
-                var tasks = new List<Task>();
+                var tasks = new List<Task<Vm>>();
                 foreach (var vm in vms)
                 {
                     var vmResultTask = VmResultTask(context, vm, pool, tags, outputs);
