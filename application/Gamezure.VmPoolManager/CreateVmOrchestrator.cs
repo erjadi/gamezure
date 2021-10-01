@@ -16,13 +16,11 @@ namespace Gamezure.VmPoolManager
     public class CreateVmOrchestrator
     {
         private readonly PoolRepository poolRepository;
-        private readonly VmRepository vmRepository;
         private readonly PoolManager poolManager;
 
-        public CreateVmOrchestrator(PoolRepository poolRepository, VmRepository vmRepository, PoolManager poolManager)
+        public CreateVmOrchestrator(PoolRepository poolRepository, PoolManager poolManager)
         {
             this.poolRepository = poolRepository;
-            this.vmRepository = vmRepository;
             this.poolManager = poolManager;
         }
 
