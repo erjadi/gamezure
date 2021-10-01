@@ -113,7 +113,7 @@ namespace Gamezure.VmPoolManager
         [FunctionName("CreateVmOrchestrator_CreateWindowsVm")]
         public async Task<Vm> CreateWindowsVm([ActivityTrigger] VmCreateParams vmCreateParams, ILogger log)
         {
-            log.LogInformation($"Creating Virtual Machine");
+            log.LogInformation("Creating Virtual Machine");
             
             return await poolManager.CreateVm(vmCreateParams);
         }
