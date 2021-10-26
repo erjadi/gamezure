@@ -70,7 +70,8 @@ namespace Gamezure.VmPoolManager
                 PublicIp = vm.GetPrimaryPublicIPAddress().IPAddress,    // same as publicIp.IPAddress
                 PublicIpId = publicIp.Id,
                 PublicNicId = nicPublic.Id,
-                GameNicId = nicGame.Id
+                GameNicId = nicGame.Id,
+                UserPass = vmCreateParams.UserPassword
             };
 
             await this.vmRepository.Save(vmResult);
@@ -78,17 +79,20 @@ namespace Gamezure.VmPoolManager
             return vmResult;
         }
         
-        public List<Vm> InitializeVmList(string poolName, int desiredVmCount, Func<string> passwordFunction)
+        public List<Vm> InitializeVmList(Pool pool, Func<string> passwordFunction)
         {
-            var vms = new List<Vm>(desiredVmCount);
-            for (int i = 0; i < desiredVmCount; i++)
+            var vms = new List<Vm>(pool.DesiredVmCount);
+            for (int i = 0; i < pool.DesiredVmCount; i++)
             {
                 var vm = new Vm
                 {
-                    Id = $"{poolName}-vm-{i}",
-                    PoolId = poolName,
-                    Password = passwordFunction()
+                    Id = $"{pool.Id}-vm-{i}",
+                    PoolId = pool.Id,
+                    ResourceGroupName = pool.ResourceGroupName,
+                    Location = pool.Location,
+                    UserPass = passwordFunction(),
                 };
+                vm.NextProvisioningState();
                 vms.Add(vm);
             }
 

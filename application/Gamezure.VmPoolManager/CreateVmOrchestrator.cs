@@ -42,7 +42,7 @@ namespace Gamezure.VmPoolManager
                 };
 
                 context.NewGuid();
-                var vms = this.poolManager.InitializeVmList(pool.Id, pool.DesiredVmCount, () => context.NewGuid().ToString());
+                var vms = this.poolManager.InitializeVmList(pool, () => context.NewGuid().ToString());
                 var tasks = new List<Task<Vm>>();
                 foreach (var vm in vms)
                 {
@@ -62,7 +62,7 @@ namespace Gamezure.VmPoolManager
 
         private async Task<Vm> VmResultTask(IDurableOrchestrationContext context, Vm vm, Pool pool, IDictionary<string, string> tags, List<string> outputs)
         {
-            var vmCreateParams = new VmCreateParams(vm.Id, vm.PoolId, "gamezure", vm.Password, pool.ResourceGroupName, pool.Location, tags, pool.Net);
+            var vmCreateParams = new VmCreateParams(vm.Id, vm.PoolId, "gamezure", vm.UserPass, pool.ResourceGroupName, pool.Location, tags, pool.Net);
             Vm vmResult = await context.CallActivityAsync<Vm>("CreateVmOrchestrator_CreateWindowsVm", vmCreateParams);
             outputs.Add($"Finished creation of {vmResult}");
             return vmResult;
